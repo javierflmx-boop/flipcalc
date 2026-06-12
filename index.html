@@ -392,23 +392,23 @@ export default function App() {
         {currentStrips.map((strip, i) => {
           const isActive = active===strip.key;
           const hasVal   = strip.val && strip.val!=="$0";
-          const vc       = hasVal ? valColor(strip.type) : "rgba(255,255,255,0.8)";
+          const vc       = hasVal ? valColor(strip.type) : "#fff";
           return (
             <div key={strip.key} onClick={() => setActive(strip.key)} style={{
               flex:1, background:strip.color,
               display:"flex", flexDirection:"column",
-              alignItems:"center", justifyContent:"space-between",
-              paddingTop:10, paddingBottom:10,
+              alignItems:"center", justifyContent:"center",
+              gap:6,
               cursor:"pointer",
-              opacity:isActive?1:hasVal?0.9:0.5,
-              boxShadow:isActive?"inset -4px 0 0 rgba(0,0,0,0.2)":"none",
-              borderTop:i>0?"1px solid rgba(255,255,255,0.15)":"none",
+              opacity:isActive?1:hasVal?0.88:0.48,
+              boxShadow:isActive?"inset -5px 0 0 rgba(0,0,0,0.25)":"none",
+              borderTop:i>0?"1px solid rgba(255,255,255,0.12)":"none",
               transition:"opacity 0.15s, box-shadow 0.15s",
             }}>
-              <div style={{ writingMode:"vertical-rl", transform:"rotate(180deg)", fontSize:8, fontWeight:700, letterSpacing:"0.12em", color:"rgba(255,255,255,0.65)", textTransform:"uppercase" }}>
+              <div style={{ writingMode:"vertical-rl", transform:"rotate(180deg)", fontSize:9, fontWeight:700, letterSpacing:"0.1em", color:"rgba(255,255,255,0.75)", textTransform:"uppercase" }}>
                 {strip.label}
               </div>
-              <div style={{ writingMode:"vertical-rl", transform:"rotate(180deg)", fontSize:hasVal&&strip.val.length>4?13:16, fontWeight:800, fontFamily:"Georgia,serif", color:vc, lineHeight:1 }}>
+              <div style={{ writingMode:"vertical-rl", transform:"rotate(180deg)", fontSize:hasVal&&strip.val.length>4?12:15, fontWeight:900, fontFamily:"Georgia,serif", color:vc, lineHeight:1 }}>
                 {hasVal ? strip.val : "—"}
               </div>
             </div>
