@@ -1,423 +1,607 @@
-import { useState } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>FlipCalc — LUMILA Holdings</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      min-height: 100%;
+      background: linear-gradient(180deg, #F5C01A 0%, #7A4208 100%);
+      background-attachment: fixed;
+      font-family: 'DM Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+      color: #fff;
+    }
+    button { font-family: 'DM Sans', sans-serif; border: none; cursor: pointer; }
 
-const GOLD  = "#C4962A";
-const RED   = "#FF5C5C";
+    /* Layout */
+    #app { min-height: 100vh; display: flex; flex-direction: column; padding-right: 72px; }
+
+    /* Header */
+    #header { display: flex; justify-content: space-between; align-items: center; padding: 22px 16px 0 22px; }
+    #brand-sub { font-size: 9px; letter-spacing: 0.28em; color: rgba(255,255,255,0.45); text-transform: uppercase; margin-bottom: 3px; }
+    #brand { font-size: 22px; color: #fff; line-height: 1; }
+    #brand span { opacity: 0.5; }
+    #btn-reset { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; color: rgba(255,255,255,0.7); font-size: 9px; font-weight: 600; letter-spacing: 0.15em; padding: 6px 14px; display: none; }
+
+    /* Tabs */
+    #tabs { display: flex; gap: 6px; padding: 12px 16px 0 22px; }
+    .tab { flex: 1; padding: 9px 4px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; color: rgba(255,255,255,0.5); font-size: 9px; font-weight: 400; letter-spacing: 0.04em; }
+    .tab.active { background: rgba(0,0,0,0.3); border-color: rgba(0,0,0,0.4); color: #fff; font-weight: 600; }
+
+    /* Hero */
+    #hero { padding: 18px 16px 0 22px; }
+    #hero-label { font-size: 10px; letter-spacing: 0.2em; color: rgba(255,255,255,0.45); text-transform: uppercase; margin-bottom: 4px; font-weight: 500; }
+    #hero-value { font-size: 72px; color: #fff; line-height: 1; letter-spacing: -0.03em; font-weight: 800; }
+    #hero-full  { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 4px; }
+
+    /* Fields */
+    #fields { padding: 18px 16px 0 22px; display: flex; flex-direction: column; gap: 0; }
+    .field { padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 2px; cursor: pointer; }
+    .field-label { font-size: 9px; letter-spacing: 0.2em; color: rgba(255,255,255,0.45); text-transform: uppercase; margin-bottom: 5px; font-weight: 500; }
+    .field.active .field-label { color: #fff; }
+    .field-value { font-size: 28px; font-weight: 700; color: rgba(255,255,255,0.35); min-height: 34px; }
+    .field.active .field-value { color: #fff; }
+    .field-placeholder { font-size: 17px; color: rgba(255,255,255,0.22); font-weight: 400; }
+    .field-spacer { margin-top: 10px; }
+
+    /* Reno */
+    #reno-wrap { margin: 14px 0; }
+    #reno-label { font-size: 8px; letter-spacing: 0.22em; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 10px; }
+    #reno-btns  { display: flex; gap: 7px; }
+    .reno-btn { flex: 1; padding: 10px 4px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; text-align: center; }
+    .reno-btn.active { background: rgba(0,0,0,0.3); border-color: rgba(0,0,0,0.4); }
+    .reno-btn .rn  { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.6); }
+    .reno-btn .rp  { font-size: 7px; color: rgba(255,255,255,0.3); margin-top: 3px; }
+    .reno-btn.active .rn { color: #fff; }
+    .reno-btn.active .rp { color: rgba(255,255,255,0.5); }
+    #reno-info { font-size: 8px; color: rgba(255,255,255,0.4); margin-top: 7px; letter-spacing: 0.1em; display: none; }
+
+    /* Slider */
+    #slider-wrap { margin-top: 6px; }
+    #slider-row  { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    #slider-lbl  { font-size: 9px; letter-spacing: 0.18em; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+    #slider-val  { font-size: 16px; font-weight: 700; color: #fff; }
+    #profit-slider { width: 100%; -webkit-appearance: none; appearance: none; height: 3px; border-radius: 2px; outline: none; }
+    #profit-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,0.9); cursor: pointer; }
+
+    /* Calculate */
+    #calc-wrap { padding: 18px 16px 0 22px; }
+    #btn-calc { width: 100%; background: rgba(0,0,0,0.35); border: 1px solid rgba(0,0,0,0.3); border-radius: 16px; font-size: 13px; font-weight: 600; color: #fff; letter-spacing: 0.2em; padding: 16px 0; text-transform: uppercase; }
+    #btn-calc:active { transform: scale(0.97); }
+
+    /* Results */
+    #results { display: none; flex-wrap: wrap; gap: 18px; padding: 18px 16px 28px 22px; }
+    .result-item {}
+    .result-label { font-size: 8px; letter-spacing: 0.18em; color: rgba(255,255,255,0.4); margin-bottom: 3px; text-transform: uppercase; }
+    .result-value { font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+
+    /* Strips */
+    #strips { position: fixed; right: 0; top: 0; height: 100vh; display: flex; flex-direction: column; width: 68px; }
+    .strip { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0 4px; cursor: pointer; border-top: 1px solid rgba(255,255,255,0.12); transition: opacity 0.15s, box-shadow 0.15s; opacity: 0.48; }
+    .strip:first-child { border-top: none; }
+    .strip.has-val { opacity: 0.88; }
+    .strip.active  { opacity: 1; box-shadow: inset -5px 0 0 rgba(0,0,0,0.25); }
+    .strip-label { font-size: 7px; font-weight: 700; letter-spacing: 0.08em; color: rgba(255,255,255,0.7); text-transform: uppercase; text-align: center; line-height: 1.2; }
+    .strip-value { font-size: 13px; font-weight: 900; color: #fff; text-align: center; line-height: 1; }
+    .strip-value.earn  { color: #C4962A; }
+    .strip-value.spend { color: #FF5C5C; }
+    .strip-value.info  { color: rgba(255,255,255,0.95); }
+
+    /* Keypad */
+    #keypad { display: none; position: fixed; bottom: 14px; left: 14px; width: calc(100% - 96px); background: rgba(0,0,0,0.6); border-radius: 18px; border: 1px solid rgba(255,255,255,0.15); padding: 6px 8px 8px; z-index: 100; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+    #keypad.open { display: block; }
+    #kp-top { display: flex; gap: 6px; margin-bottom: 6px; }
+    #btn-k    { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; padding: 7px 0; }
+    #btn-done { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; padding: 7px 16px; }
+    #kp-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; }
+    .kp-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; color: #fff; font-size: 18px; font-weight: 600; padding: 10px 0; }
+    .kp-btn.action { background: rgba(255,255,255,0.06); color: #FF5C5C; }
+    .kp-btn.back   { background: rgba(255,255,255,0.06); color: #aaa; font-size: 15px; }
+    .kp-btn:active { background: rgba(255,255,255,0.28); }
+
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+    .shake { animation: shake 0.4s ease; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div id="header">
+    <div>
+      <div id="brand-sub">Lumila Holdings</div>
+      <div id="brand">Flip<span>Calc</span></div>
+    </div>
+    <button id="btn-reset">RESET</button>
+  </div>
+
+  <div id="tabs">
+    <button class="tab active" data-mode="flip">Flip 70%</button>
+    <button class="tab" data-mode="sell">Sell Price</button>
+    <button class="tab" data-mode="budget">Mat. Budget</button>
+  </div>
+
+  <div id="hero">
+    <div id="hero-label">After Repair Value</div>
+    <div id="hero-value">$0</div>
+    <div id="hero-full"></div>
+  </div>
+
+  <div id="fields">
+    <!-- Flip mode -->
+    <div id="flip-fields">
+      <div class="field active" data-field="arv">
+        <div class="field-label">After Repair Value</div>
+        <div class="field-value"><span class="field-placeholder">tap to enter</span></div>
+      </div>
+      <div id="reno-wrap">
+        <div id="reno-label">Renovation Type</div>
+        <div id="reno-btns">
+          <button class="reno-btn" data-pct="0.12"><div class="rn">Cosmetic</div><div class="rp">10–15% ARV</div></button>
+          <button class="reno-btn" data-pct="0.175"><div class="rn">Moderate</div><div class="rp">15–20% ARV</div></button>
+          <button class="reno-btn" data-pct="0.25"><div class="rn">Major</div><div class="rp">20–30% ARV</div></button>
+        </div>
+        <div id="reno-info"></div>
+      </div>
+      <div class="field" data-field="repairs">
+        <div class="field-label">Repairs — Estimated cost</div>
+        <div class="field-value"><span class="field-placeholder">tap to enter</span></div>
+      </div>
+    </div>
+
+    <!-- Sell mode -->
+    <div id="sell-fields" style="display:none; flex-direction:column; gap:0;">
+      <div class="field active" data-field="buyPrice">
+        <div class="field-label">I Paid</div>
+        <div class="field-value"><span class="field-placeholder">tap to enter</span></div>
+      </div>
+      <div class="field-spacer"></div>
+      <div class="field" data-field="materials">
+        <div class="field-label">Labor &amp; Materials</div>
+        <div class="field-value"><span class="field-placeholder">tap to enter</span></div>
+      </div>
+    </div>
+
+    <!-- Budget mode -->
+    <div id="budget-fields" style="display:none; flex-direction:column; gap:0;">
+      <div class="field active" data-field="budgetBuy">
+        <div class="field-label">I Paid</div>
+        <div class="field-value"><span class="field-placeholder">tap to enter</span></div>
+      </div>
+      <div class="field-spacer"></div>
+      <div class="field" data-field="salePrice">
+        <div class="field-label">I Can Sell For</div>
+        <div class="field-value"><span class="field-placeholder">tap to enter</span></div>
+      </div>
+      <div id="slider-wrap">
+        <div id="slider-row">
+          <div id="slider-lbl">Target Profit</div>
+          <div id="slider-val">15%</div>
+        </div>
+        <input type="range" id="profit-slider" min="5" max="40" step="1" value="15"/>
+      </div>
+    </div>
+  </div>
+
+  <div id="calc-wrap">
+    <button id="btn-calc">Calculate</button>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<!-- Strips -->
+<div id="strips"></div>
+
+<!-- Keypad -->
+<div id="keypad">
+  <div id="kp-top">
+    <button id="btn-k">× 1,000 (K)</button>
+    <button id="btn-done">Done</button>
+  </div>
+  <div id="kp-grid">
+    <button class="kp-btn" data-key="7">7</button>
+    <button class="kp-btn" data-key="8">8</button>
+    <button class="kp-btn" data-key="9">9</button>
+    <button class="kp-btn" data-key="4">4</button>
+    <button class="kp-btn" data-key="5">5</button>
+    <button class="kp-btn" data-key="6">6</button>
+    <button class="kp-btn" data-key="1">1</button>
+    <button class="kp-btn" data-key="2">2</button>
+    <button class="kp-btn" data-key="3">3</button>
+    <button class="kp-btn action" data-key="C">CLR</button>
+    <button class="kp-btn" data-key="0">0</button>
+    <button class="kp-btn back" data-key="X">⌫</button>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────
+const state = {
+  mode: 'flip',
+  active: 'arv',
+  arv: '', repairs: '', buyPrice: '', materials: '', budgetBuy: '', salePrice: '',
+  profitPct: 15,
+  result: null,
+  reno: null,
+};
+
+const GOLD = '#C4962A', RED = '#FF5C5C';
 
 function fmt(n) {
-  if (!n && n !== 0) return "$0";
-  const abs  = Math.abs(Math.round(n));
-  const sign = n < 0 ? "-" : "";
-  if (abs >= 1000000) return sign + "$" + (abs/1000000).toFixed(1) + "M";
-  if (abs >= 1000)    return sign + "$" + Math.round(abs/1000) + "K";
-  return sign + "$" + abs;
+  if (!n && n !== 0) return '$0';
+  const abs = Math.abs(Math.round(n)), sign = n < 0 ? '-' : '';
+  if (abs >= 1000000) return sign + '$' + (abs/1000000).toFixed(1) + 'M';
+  if (abs >= 1000)    return sign + '$' + Math.round(abs/1000) + 'K';
+  return sign + '$' + abs;
 }
 function fmtFull(n) {
-  if (!n && n !== 0) return "";
-  return (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString();
-}
-function valColor(type) {
-  if (type === "earn")  return GOLD;
-  if (type === "spend") return RED;
-  return "rgba(255,255,255,0.9)";
+  if (!n && n !== 0) return '';
+  return (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString();
 }
 
-const MODES = [
-  { key:"flip",   label:"Flip 70%"   },
-  { key:"sell",   label:"Sell Price" },
-  { key:"budget", label:"Mat. Budget"},
+// ── Strip config ─────────────────────────────────────────────────
+const FLIP_STRIPS = [
+  {key:'arv',      label:'ARV',       color:'#5CC8C8', type:'info'},
+  {key:'repairs',  label:'REPAIRS',   color:'#C47EDB', type:'spend'},
+  {key:'maxOffer', label:'MAX OFFER', color:'#F5A623', type:'info'},
+  {key:'spread',   label:'SPREAD',    color:'#F4845F', type:'info'},
+  {key:'closing',  label:'CLOSING',   color:'#E05B7A', type:'spend'},
+  {key:'holding',  label:'HOLDING',   color:'#6BAED6', type:'spend'},
+  {key:'profit',   label:'PROFIT',    color:'#5DB87A', type:'earn'},
+  {key:'roi',      label:'ROI',       color:'#A8CC5A', type:'earn'},
+];
+const SELL_STRIPS = [
+  {key:'buyPrice',  label:'PAID',      color:'#F4845F', type:'spend'},
+  {key:'materials', label:'MATERIALS', color:'#C47EDB', type:'spend'},
+  {key:'breakEven', label:'BREAK EVEN',color:'#6BAED6', type:'info'},
+  {key:'sell20',    label:'SELL 20%',  color:'#5CC8C8', type:'earn'},
+  {key:'sell30',    label:'SELL 30%',  color:'#F5A623', type:'earn'},
+  {key:'sell40',    label:'SELL 40%',  color:'#5DB87A', type:'earn'},
+];
+const BUDGET_STRIPS = [
+  {key:'buyPrice',  label:'PAID',     color:'#F4845F', type:'spend'},
+  {key:'salePrice', label:'SALE',     color:'#5CC8C8', type:'info'},
+  {key:'spread',    label:'SPREAD',   color:'#F5A623', type:'info'},
+  {key:'closing',   label:'CLOSING',  color:'#E05B7A', type:'spend'},
+  {key:'holding',   label:'HOLDING',  color:'#6BAED6', type:'spend'},
+  {key:'profit',    label:'PROFIT',   color:'#5DB87A', type:'earn'},
+  {key:'maxMat',    label:'MAX MAT.', color:'#C47EDB', type:'info'},
 ];
 
-const RENO_TYPES = [
-  { key:"cosmetic", label:"Cosmetic", sub:"10–15%", pct:0.12  },
-  { key:"moderate", label:"Moderate", sub:"15–20%", pct:0.175 },
-  { key:"major",    label:"Major",    sub:"20–30%", pct:0.25  },
-];
-
-function DisplayField({ label, rawVal, isActive, onTap }) {
-  const n       = parseFloat(rawVal) || 0;
-  const display = n ? "$" + n.toLocaleString() : "";
-  return (
-    <div onClick={onTap} style={{ cursor:"pointer", paddingBottom:14, borderBottom:"1px solid rgba(255,255,255,0.2)", marginBottom:2 }}>
-      <div style={{ fontSize:9, letterSpacing:"0.2em", color:isActive?"#fff":"rgba(255,255,255,0.45)", textTransform:"uppercase", marginBottom:5, fontWeight:500 }}>{label}</div>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <div style={{ fontSize:28, color:isActive?"#fff":"rgba(255,255,255,0.35)", fontFamily:"Georgia,serif", letterSpacing:"-0.01em", minHeight:34 }}>
-          {display || <span style={{ fontSize:17, color:"rgba(255,255,255,0.22)", fontFamily:"sans-serif" }}>tap to enter</span>}
-        </div>
-        {isActive && <div style={{ width:2, height:26, background:"#fff", borderRadius:1, opacity:0.7 }} />}
-      </div>
-    </div>
-  );
+function getStrips() {
+  return state.mode === 'flip' ? FLIP_STRIPS : state.mode === 'sell' ? SELL_STRIPS : BUDGET_STRIPS;
 }
 
-function BigNum({ label, val, color }) {
-  return (
-    <div>
-      <div style={{ fontSize:8, letterSpacing:"0.18em", color:"rgba(255,255,255,0.4)", marginBottom:3, textTransform:"uppercase" }}>{label}</div>
-      <div style={{ fontSize:30, color, lineHeight:1, letterSpacing:"-0.02em", fontFamily:"Georgia,serif" }}>{val}</div>
-    </div>
-  );
+function getStripVal(key) {
+  const r = state.result;
+  if (key === 'arv')      return fmt(parseFloat(state.arv)||0);
+  if (key === 'repairs')  return fmt(parseFloat(state.repairs)||0);
+  if (key === 'buyPrice') return fmt(parseFloat(state.mode==='budget'?state.budgetBuy:state.buyPrice)||0);
+  if (key === 'materials')return fmt(parseFloat(state.materials)||0);
+  if (key === 'salePrice')return fmt(parseFloat(state.salePrice)||0);
+  if (!r) return null;
+  if (key === 'maxOffer') return fmt(r.maxOffer);
+  if (key === 'spread')   return fmt(r.spread);
+  if (key === 'closing')  return fmt(r.closing);
+  if (key === 'holding')  return fmt(r.holding);
+  if (key === 'profit')   return fmt(r.profit);
+  if (key === 'roi')      return Math.round(r.roi) + '%';
+  if (key === 'maxMat')   return fmt(r.maxMat);
+  if (key === 'breakEven')return fmt(r.breakEven);
+  if (key === 'sell20')   return fmt(r.sell20);
+  if (key === 'sell30')   return fmt(r.sell30);
+  if (key === 'sell40')   return fmt(r.sell40);
+  return null;
 }
 
-function Keypad({ value, onChange, onDone }) {
-  const press = (key) => {
-    if (key === "⌫") { onChange(value.slice(0,-1)); return; }
-    if (key === "C") { onChange(""); return; }
-    if (key === "K") { const n=parseFloat(value)||0; if(n>0) onChange(String(n*1000)); return; }
-    if (value.length >= 9) return;
-    onChange(value + key);
+// ── Hero config ──────────────────────────────────────────────────
+function getHero(key) {
+  const r = state.result;
+  const configs = {
+    arv:      {label:'After Repair Value',    val:parseFloat(state.arv)||0,     color:'rgba(255,255,255,0.95)'},
+    repairs:  {label:'Repair Cost',           val:parseFloat(state.repairs)||0, color:'rgba(255,255,255,0.95)'},
+    maxOffer: {label:'Max Offer — 70% Rule',  val:r?r.maxOffer:0,               color:'#fff'},
+    spread:   {label:'Raw Spread',            val:r?r.spread:0,                 color:'rgba(255,255,255,0.9)'},
+    closing:  {label:'Closing Costs (6%)',    val:r?r.closing:0,                color:RED},
+    holding:  {label:'Holding Costs (3%)',    val:r?r.holding:0,                color:RED},
+    profit:   {label:'Real Profit',           val:r?r.profit:0,                 color:r&&r.profit>=0?GOLD:RED},
+    roi:      {label:'Return on Investment',  val:r?r.roi:0,                    color:GOLD, isPct:true},
+    buyPrice: {label:'Purchase Price',        val:parseFloat(state.mode==='budget'?state.budgetBuy:state.buyPrice)||0, color:'rgba(255,255,255,0.95)'},
+    materials:{label:'Labor & Materials',     val:parseFloat(state.materials)||0,color:'rgba(255,255,255,0.95)'},
+    breakEven:{label:'Break-Even Sale',       val:r?r.breakEven:0,              color:'rgba(255,255,255,0.9)'},
+    sell20:   {label:'Sale at 20% Profit',    val:r?r.sell20:0,                 color:'rgba(255,255,255,0.9)'},
+    sell30:   {label:'Sale at 30% Profit',    val:r?r.sell30:0,                 color:'#fff'},
+    sell40:   {label:'Sale at 40% Profit',    val:r?r.sell40:0,                 color:GOLD},
+    salePrice:{label:'Target Sale Price',     val:parseFloat(state.salePrice)||0,color:'rgba(255,255,255,0.95)'},
+    maxMat:   {label:'Max Labor & Materials', val:r?r.maxMat:0,                 color:'rgba(255,255,255,0.95)'},
   };
-  const keys = ["7","8","9","4","5","6","1","2","3","C","0","⌫"];
-  return (
-    <div style={{
-      position:"fixed", bottom:14, left:14,
-      width:"calc(100% - 78px)",
-      background:"rgba(0,0,0,0.55)",
-      borderRadius:18,
-      border:"1px solid rgba(255,255,255,0.15)",
-      padding:"6px 8px 8px",
-      zIndex:100,
-      boxShadow:"0 8px 32px rgba(0,0,0,0.3)",
-    }}>
-      {/* Top row: K shortcut + Done */}
-      <div style={{ display:"flex", gap:6, marginBottom:6 }}>
-        <button onClick={() => press("K")} style={{
-          flex:1, background:"rgba(255,255,255,0.1)",
-          border:"1px solid rgba(255,255,255,0.2)", borderRadius:8,
-          color:"#fff", fontSize:10, fontWeight:600,
-          letterSpacing:"0.1em", padding:"6px 0", cursor:"pointer",
-        }}>× 1,000 (K)</button>
-        <button onClick={onDone} style={{
-          background:"rgba(255,255,255,0.18)",
-          border:"1px solid rgba(255,255,255,0.3)", borderRadius:8,
-          color:"#fff", fontSize:10, fontWeight:700,
-          letterSpacing:"0.1em", padding:"6px 16px", cursor:"pointer",
-        }}>Done</button>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4 }}>
-        {keys.map((k) => {
-          const isAction = k==="⌫"||k==="C";
-          return (
-            <button key={k} onClick={() => press(k)} style={{
-              background:isAction?"rgba(255,255,255,0.06)":"rgba(255,255,255,0.12)",
-              border:"1px solid rgba(255,255,255,0.1)", borderRadius:9,
-              color:k==="C"?RED:"#fff",
-              fontSize:k==="⌫"?15:17, fontWeight:600,
-              padding:"9px 0", cursor:"pointer",
-            }}>{k}</button>
-          );
-        })}
-      </div>
-    </div>
-  );
+  return configs[key] || configs['arv'];
 }
 
-export default function App() {
-  const [mode,      setMode]      = useState("flip");
-  const [arv,       setArv]       = useState("");
-  const [repairs,   setRepairs]   = useState("");
-  const [reno,      setReno]      = useState(null);
-  const [buyPrice,  setBuyPrice]  = useState("");
-  const [materials, setMaterials] = useState("");
-  const [budgetBuy, setBudgetBuy] = useState("");
-  const [salePrice, setSalePrice] = useState("");
-  const [profitPct, setProfitPct] = useState(15);
-  const [active,    setActive]    = useState("arv");
-  const [result,    setResult]    = useState(null);
-  const [shake,     setShake]     = useState(false);
-  const [keypadOpen, setKeypadOpen] = useState(false);
+// ── Render ───────────────────────────────────────────────────────
+function render() {
+  const r = state.result;
 
-  const triggerShake = () => { setShake(true); setTimeout(() => setShake(false), 400); };
+  // Hero
+  const hero = getHero(state.active);
+  document.getElementById('hero-label').textContent = hero.label;
+  const hv = document.getElementById('hero-value');
+  hv.textContent = hero.isPct ? Math.round(hero.val) + '%' : fmt(hero.val);
+  hv.style.color = hero.color;
+  document.getElementById('hero-full').textContent = hero.isPct ? '' : fmtFull(hero.val);
 
-  const applyReno = (type) => {
-    const a = parseFloat(arv)||0;
-    setReno(type.key);
-    if (a > 0) { setRepairs(String(Math.round(a*type.pct))); setActive("repairs"); }
-    else { setActive("arv"); }
-  };
+  // Strips
+  const strips = getStrips();
+  const stripsEl = document.getElementById('strips');
+  stripsEl.innerHTML = '';
+  strips.forEach(function(s) {
+    const val = getStripVal(s.key);
+    const hasVal = val && val !== '$0';
+    const div = document.createElement('div');
+    div.className = 'strip' + (hasVal?' has-val':'') + (state.active===s.key?' active':'');
+    div.style.background = s.color;
+    div.dataset.key = s.key;
 
-  const valMap = { arv, repairs, buyPrice, materials, budgetBuy, salePrice };
-  const setMap = { arv:setArv, repairs:setRepairs, buyPrice:setBuyPrice, materials:setMaterials, budgetBuy:setBudgetBuy, salePrice:setSalePrice };
+    const lbl = document.createElement('div');
+    lbl.className = 'strip-label';
+    lbl.textContent = s.label;
 
-  const activeFieldKey =
-    mode==="flip"   ? (active==="arv"?"arv":"repairs") :
-    mode==="sell"   ? (active==="buyPrice"?"buyPrice":"materials") :
-    (active==="buyPrice"?"budgetBuy":"salePrice");
+    const num = document.createElement('div');
+    num.className = 'strip-value ' + s.type;
+    num.textContent = hasVal ? val : '—';
+    if (hasVal && val.length > 4) num.style.fontSize = '11px';
 
-  const showKeypad = keypadOpen && (
-    mode==="flip"   ? (active==="arv"||active==="repairs") :
-    mode==="sell"   ? (active==="buyPrice"||active==="materials") :
-    (active==="buyPrice"||active==="salePrice")
-  );
+    div.appendChild(lbl);
+    div.appendChild(num);
+    div.addEventListener('click', function() { state.active = s.key; render(); });
+    stripsEl.appendChild(div);
+  });
 
-  const calculate = () => {
-    if (mode==="flip") {
-      const a=parseFloat(arv)||0, r=parseFloat(repairs)||0;
-      if (!a) { triggerShake(); return; }
-      const maxOffer=a*0.70-r, closing=a*0.06, holding=a*0.03;
-      const spread=a-maxOffer-r, profit=spread-closing-holding;
-      const totalIn=maxOffer+r, roi=totalIn>0?(profit/totalIn)*100:0;
-      const repairPct=a>0?(r/a)*100:0, profitPctV=a>0?(profit/a)*100:0;
-      setResult({mode:"flip",arv:a,repairs:r,maxOffer,closing,holding,spread,profit,roi,repairPct,profitPctV});
-      setActive("maxOffer"); setKeypadOpen(false);
+  // Reset button
+  document.getElementById('btn-reset').style.display = r ? 'block' : 'none';
+
+  // Results
+  const resultsEl = document.getElementById('results');
+  if (r) {
+    resultsEl.style.display = 'flex';
+    resultsEl.innerHTML = '';
+    let items = [];
+    if (state.mode === 'flip') {
+      items = [
+        {label:'MAX OFFER',   val:fmt(r.maxOffer), color:'#fff'},
+        {label:'REAL PROFIT', val:fmt(r.profit),   color:r.profit>=0?GOLD:RED},
+        {label:'ROI',         val:Math.round(r.roi)+'%', color:r.roi>=0?GOLD:RED},
+      ];
+    } else if (state.mode === 'sell') {
+      items = [
+        {label:'BREAK EVEN', val:fmt(r.breakEven), color:'rgba(255,255,255,0.8)'},
+        {label:'→ 20%',      val:fmt(r.sell20),    color:'rgba(255,255,255,0.8)'},
+        {label:'→ 30%',      val:fmt(r.sell30),    color:'#fff'},
+        {label:'→ 40%',      val:fmt(r.sell40),    color:GOLD},
+      ];
+    } else {
+      items = [
+        {label:'MAX MATERIALS', val:fmt(r.maxMat),               color:r.maxMat>0?'#fff':RED},
+        {label:'YOUR PROFIT',   val:fmt(r.profit),               color:GOLD},
+        {label:'CLOSING+HOLD',  val:fmt(r.closing+r.holding),    color:RED},
+      ];
     }
-    if (mode==="sell") {
-      const bp=parseFloat(buyPrice)||0, m=parseFloat(materials)||0;
-      if (!bp) { triggerShake(); return; }
-      const allIn=bp+m, c=0.06;
-      setResult({mode:"sell",buyPrice:bp,materials:m,
-        breakEven:allIn/(1-c),sell20:allIn/(1-c-0.20),
-        sell30:allIn/(1-c-0.30),sell40:allIn/(1-c-0.40)});
-      setActive("sell30"); setKeypadOpen(false);
-    }
-    if (mode==="budget") {
-      const bp=parseFloat(budgetBuy)||0, sp=parseFloat(salePrice)||0;
-      if (!bp||!sp) { triggerShake(); return; }
-      const spread=sp-bp, closing=sp*0.06, holding=sp*0.03;
-      const profit=sp*(profitPct/100), maxMat=spread-closing-holding-profit;
-      setResult({mode:"budget",buyPrice:bp,salePrice:sp,spread,closing,holding,profit,maxMat,profitPct});
-      setActive("maxMat"); setKeypadOpen(false);
-    }
-  };
+    items.forEach(function(item) {
+      const div = document.createElement('div');
+      div.className = 'result-item';
+      div.innerHTML = '<div class="result-label">' + item.label + '</div><div class="result-value" style="color:' + item.color + '">' + item.val + '</div>';
+      resultsEl.appendChild(div);
+    });
+  } else {
+    resultsEl.style.display = 'none';
+  }
 
-  const reset = () => {
-    setArv(""); setRepairs(""); setReno(null);
-    setBuyPrice(""); setMaterials("");
-    setBudgetBuy(""); setSalePrice("");
-    setResult(null);
-    setActive(mode==="flip"?"arv":"buyPrice");
-  };
-  const switchMode = (m) => { setMode(m); setResult(null); setReno(null); setActive(m==="flip"?"arv":"buyPrice"); };
-
-  const flipStrips = [
-    {key:"arv",      label:"ARV",       color:"#5CC8C8", type:"info",  val:fmt(parseFloat(arv)||0)},
-    {key:"repairs",  label:"REPAIRS",   color:"#C47EDB", type:"spend", val:fmt(parseFloat(repairs)||0)},
-    {key:"maxOffer", label:"MAX OFFER", color:"#F5A623", type:"info",  val:result?fmt(result.maxOffer):null},
-    {key:"spread",   label:"SPREAD",    color:"#F4845F", type:"info",  val:result?fmt(result.spread):null},
-    {key:"closing",  label:"CLOSING",   color:"#E05B7A", type:"spend", val:result?fmt(result.closing):null},
-    {key:"holding",  label:"HOLDING",   color:"#6BAED6", type:"spend", val:result?fmt(result.holding):null},
-    {key:"profit",   label:"PROFIT",    color:"#5DB87A", type:"earn",  val:result?fmt(result.profit):null},
-    {key:"roi",      label:"ROI",       color:"#A8CC5A", type:"earn",  val:result?Math.round(result.roi)+"%":null},
-  ];
-  const sellStrips = [
-    {key:"buyPrice",  label:"PAID",      color:"#F4845F", type:"spend", val:fmt(parseFloat(buyPrice)||0)},
-    {key:"materials", label:"MATERIALS", color:"#C47EDB", type:"spend", val:fmt(parseFloat(materials)||0)},
-    {key:"breakEven", label:"BREAK EVEN",color:"#6BAED6", type:"info",  val:result?fmt(result.breakEven):null},
-    {key:"sell20",    label:"SELL 20%",  color:"#5CC8C8", type:"earn",  val:result?fmt(result.sell20):null},
-    {key:"sell30",    label:"SELL 30%",  color:"#F5A623", type:"earn",  val:result?fmt(result.sell30):null},
-    {key:"sell40",    label:"SELL 40%",  color:"#5DB87A", type:"earn",  val:result?fmt(result.sell40):null},
-  ];
-  const budgetStrips = [
-    {key:"buyPrice",  label:"PAID",     color:"#F4845F", type:"spend", val:fmt(parseFloat(budgetBuy)||0)},
-    {key:"salePrice", label:"SALE",     color:"#5CC8C8", type:"info",  val:fmt(parseFloat(salePrice)||0)},
-    {key:"spread",    label:"SPREAD",   color:"#F5A623", type:"info",  val:result?fmt(result.spread):null},
-    {key:"closing",   label:"CLOSING",  color:"#E05B7A", type:"spend", val:result?fmt(result.closing):null},
-    {key:"holding",   label:"HOLDING",  color:"#6BAED6", type:"spend", val:result?fmt(result.holding):null},
-    {key:"profit",    label:"PROFIT",   color:"#5DB87A", type:"earn",  val:result?fmt(result.profit):null},
-    {key:"maxMat",    label:"MAX MAT.", color:"#C47EDB", type:"info",  val:result?fmt(result.maxMat):null},
-  ];
-  const currentStrips = mode==="flip"?flipStrips:mode==="sell"?sellStrips:budgetStrips;
-
-  const heroMap = mode==="flip" ? {
-    arv:      {val:parseFloat(arv)||0,     label:"After Repair Value",    color:"rgba(255,255,255,0.95)"},
-    repairs:  {val:parseFloat(repairs)||0, label:"Repair Cost",           color:"rgba(255,255,255,0.95)"},
-    maxOffer: {val:result?result.maxOffer:0,label:"Max Offer — 70% Rule", color:"#fff"},
-    spread:   {val:result?result.spread:0,  label:"Raw Spread",           color:"rgba(255,255,255,0.9)"},
-    closing:  {val:result?result.closing:0, label:"Closing Costs (6%)",   color:RED},
-    holding:  {val:result?result.holding:0, label:"Holding Costs (3%)",   color:RED},
-    profit:   {val:result?result.profit:0,  label:"Real Profit",          color:result&&result.profit>=0?GOLD:RED},
-    roi:      {val:result?result.roi:0,     label:"Return on Investment", color:GOLD, isPct:true},
-  } : mode==="sell" ? {
-    buyPrice:  {val:parseFloat(buyPrice)||0,  label:"Purchase Price",     color:"rgba(255,255,255,0.95)"},
-    materials: {val:parseFloat(materials)||0, label:"Labor & Materials",  color:"rgba(255,255,255,0.95)"},
-    breakEven: {val:result?result.breakEven:0, label:"Break-Even Sale",   color:"rgba(255,255,255,0.9)"},
-    sell20:    {val:result?result.sell20:0,    label:"Sale at 20% Profit",color:"rgba(255,255,255,0.9)"},
-    sell30:    {val:result?result.sell30:0,    label:"Sale at 30% Profit",color:"#fff"},
-    sell40:    {val:result?result.sell40:0,    label:"Sale at 40% Profit",color:GOLD},
-  } : {
-    buyPrice:  {val:parseFloat(budgetBuy)||0, label:"Purchase Price",        color:"rgba(255,255,255,0.95)"},
-    salePrice: {val:parseFloat(salePrice)||0, label:"Target Sale Price",     color:"rgba(255,255,255,0.95)"},
-    spread:    {val:result?result.spread:0,    label:"Gross Spread",          color:"rgba(255,255,255,0.9)"},
-    closing:   {val:result?result.closing:0,   label:"Closing Costs (6%)",   color:RED},
-    holding:   {val:result?result.holding:0,   label:"Holding Costs (3%)",   color:RED},
-    profit:    {val:result?result.profit:0,    label:`Your Profit (${profitPct}%)`, color:GOLD},
-    maxMat:    {val:result?result.maxMat:0,    label:"Max Labor & Materials", color:"rgba(255,255,255,0.95)"},
-  };
-
-  const hero = heroMap[active] || Object.values(heroMap)[0];
-  const selectedReno = RENO_TYPES.find(t => t.key===reno);
-
-  return (
-    <div style={{
-      minHeight:"100vh",
-      background:"linear-gradient(180deg, #F5C01A 0%, #7A4208 100%)",
-      backgroundAttachment:"fixed",
-      display:"flex", flexDirection:"column",
-      fontFamily:"'DM Sans',sans-serif",
-      paddingBottom:showKeypad?180:0,
-    }}>
-      <style>{`
-        @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
-        @keyframes pop{0%{transform:scale(0.93);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
-        .pop{animation:pop 0.3s cubic-bezier(.22,.68,0,1.2) forwards}
-        input[type=range]{-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;outline:none;cursor:pointer}
-        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.9);cursor:pointer}
-        *{-webkit-tap-highlight-color:transparent}
-      `}</style>
-
-      {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"22px 80px 0 22px" }}>
-        <div>
-          <div style={{ fontSize:9, letterSpacing:"0.28em", color:"rgba(255,255,255,0.45)", textTransform:"uppercase", marginBottom:2 }}>Lumila Holdings</div>
-          <div style={{ fontSize:22, color:"#fff", lineHeight:1, fontFamily:"Georgia,serif" }}>
-            Flip<span style={{ opacity:0.6 }}>Calc</span>
-          </div>
-        </div>
-        {result && <button onClick={reset} style={{ background:"rgba(0,0,0,0.2)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:20, color:"rgba(255,255,255,0.7)", fontSize:9, fontWeight:600, letterSpacing:"0.15em", padding:"6px 14px", cursor:"pointer" }}>RESET</button>}
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display:"flex", gap:6, padding:"12px 80px 0 22px" }}>
-        {MODES.map(m => (
-          <button key={m.key} onClick={() => switchMode(m.key)} style={{
-            flex:1, padding:"9px 4px",
-            background:mode===m.key?"rgba(0,0,0,0.3)":"rgba(255,255,255,0.1)",
-            border:"1px solid "+(mode===m.key?"rgba(0,0,0,0.4)":"rgba(255,255,255,0.15)"),
-            borderRadius:12, color:mode===m.key?"#fff":"rgba(255,255,255,0.5)",
-            fontSize:9, fontWeight:mode===m.key?600:400, letterSpacing:"0.04em", cursor:"pointer",
-          }}>{m.label}</button>
-        ))}
-      </div>
-
-      {/* Hero */}
-      <div style={{ padding:"18px 80px 0 22px" }}>
-        <div style={{ fontSize:10, letterSpacing:"0.2em", color:"rgba(255,255,255,0.45)", textTransform:"uppercase", marginBottom:4, fontWeight:500 }}>{hero.label}</div>
-        <div key={active+mode} className="pop" style={{ fontSize:72, color:hero.color, lineHeight:1, letterSpacing:"-0.03em", fontFamily:"Georgia,serif" }}>
-          {hero.isPct ? Math.round(hero.val)+"%" : fmt(hero.val)}
-        </div>
-        {!hero.isPct && <div style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginTop:4 }}>{fmtFull(hero.val)}</div>}
-      </div>
-
-      {/* Inputs */}
-      <div style={{ padding:"18px 80px 0 22px" }}>
-        {mode==="flip" && (
-          <div>
-            <DisplayField label="After Repair Value" rawVal={arv} isActive={active==="arv"} onTap={() => { setActive("arv"); setKeypadOpen(true); }} />
-            <div style={{ marginTop:14, marginBottom:14 }}>
-              <div style={{ fontSize:8, letterSpacing:"0.22em", color:"rgba(255,255,255,0.35)", textTransform:"uppercase", marginBottom:10 }}>Renovation Type</div>
-              <div style={{ display:"flex", gap:7 }}>
-                {RENO_TYPES.map(t => {
-                  const isSel = reno===t.key;
-                  return (
-                    <button key={t.key} onClick={() => applyReno(t)} style={{
-                      flex:1, padding:"10px 4px",
-                      background:isSel?"rgba(0,0,0,0.3)":"rgba(255,255,255,0.1)",
-                      border:"1px solid "+(isSel?"rgba(0,0,0,0.4)":"rgba(255,255,255,0.2)"),
-                      borderRadius:12, cursor:"pointer",
-                    }}>
-                      <div style={{ fontSize:9, fontWeight:600, color:isSel?"#fff":"rgba(255,255,255,0.6)" }}>{t.label}</div>
-                      <div style={{ fontSize:7, color:isSel?"rgba(255,255,255,0.5)":"rgba(255,255,255,0.3)", marginTop:3 }}>{t.sub} ARV</div>
-                    </button>
-                  );
-                })}
-              </div>
-              {selectedReno && arv && <div style={{ fontSize:8, color:"rgba(255,255,255,0.4)", marginTop:7, letterSpacing:"0.1em" }}>{selectedReno.label} renovation</div>}
-            </div>
-            <DisplayField label="Repairs — Estimated cost" rawVal={repairs} isActive={active==="repairs"} onTap={() => { setActive("repairs"); setKeypadOpen(true); }} />
-          </div>
-        )}
-        {mode==="sell" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <DisplayField label="I Paid"            rawVal={buyPrice}  isActive={active==="buyPrice"}  onTap={() => { setActive("buyPrice");  setKeypadOpen(true); }} />
-            <DisplayField label="Labor & Materials" rawVal={materials} isActive={active==="materials"} onTap={() => { setActive("materials"); setKeypadOpen(true); }} />
-          </div>
-        )}
-        {mode==="budget" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <DisplayField label="I Paid"         rawVal={budgetBuy} isActive={active==="buyPrice"}  onTap={() => { setActive("buyPrice");  setKeypadOpen(true); }} />
-            <DisplayField label="I Can Sell For" rawVal={salePrice} isActive={active==="salePrice"} onTap={() => { setActive("salePrice"); setKeypadOpen(true); }} />
-            <div style={{ marginTop:6 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <div style={{ fontSize:9, letterSpacing:"0.18em", color:"rgba(255,255,255,0.4)", textTransform:"uppercase" }}>Target Profit</div>
-                <div style={{ fontSize:16, fontWeight:700, color:"#fff", fontFamily:"Georgia,serif" }}>{profitPct}%</div>
-              </div>
-              <input type="range" min={5} max={40} step={1} value={profitPct}
-                onChange={e => setProfitPct(Number(e.target.value))}
-                style={{ width:"100%", background:`linear-gradient(to right,rgba(255,255,255,0.7) ${(profitPct-5)/35*100}%,rgba(255,255,255,0.2) ${(profitPct-5)/35*100}%)` }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Calculate */}
-      <div style={{ padding:"18px 80px 0 22px" }}>
-        <button onClick={calculate}
-          onMouseDown={e => e.currentTarget.style.transform="scale(0.97)"}
-          onMouseUp={e => e.currentTarget.style.transform="scale(1)"}
-          style={{
-            width:"100%", background:"rgba(0,0,0,0.35)",
-            border:"1px solid rgba(0,0,0,0.3)", borderRadius:16,
-            fontSize:13, fontWeight:600, color:"#fff",
-            letterSpacing:"0.2em", padding:"16px 0", cursor:"pointer",
-            textTransform:"uppercase",
-            animation:shake?"shake 0.4s ease":"none",
-          }}
-        >Calculate</button>
-      </div>
-
-      {/* Results */}
-      {result && (
-        <div className="pop" style={{ display:"flex", gap:18, padding:"18px 80px 28px 22px", flexWrap:"wrap" }}>
-          {mode==="flip" && <>
-            <BigNum label="MAX OFFER"   val={fmt(result.maxOffer)} color="#fff" />
-            <BigNum label="REAL PROFIT" val={fmt(result.profit)}   color={result.profit>=0?GOLD:RED} />
-            <BigNum label="ROI"         val={Math.round(result.roi)+"%"} color={result.roi>=0?GOLD:RED} />
-          </>}
-          {mode==="sell" && <>
-            <BigNum label="BREAK EVEN" val={fmt(result.breakEven)} color="rgba(255,255,255,0.8)" />
-            <BigNum label="→ 20%"      val={fmt(result.sell20)}    color="rgba(255,255,255,0.8)" />
-            <BigNum label="→ 30%"      val={fmt(result.sell30)}    color="#fff" />
-            <BigNum label="→ 40%"      val={fmt(result.sell40)}    color={GOLD} />
-          </>}
-          {mode==="budget" && <>
-            <BigNum label="MAX MATERIALS" val={fmt(result.maxMat)} color={result.maxMat>0?"#fff":RED} />
-            <BigNum label="YOUR PROFIT"   val={fmt(result.profit)} color={GOLD} />
-            <BigNum label="CLOSING+HOLD"  val={fmt(result.closing+result.holding)} color={RED} />
-          </>}
-        </div>
-      )}
-
-      {/* Strips */}
-      <div style={{ position:"fixed", right:0, top:0, height:"100vh", display:"flex", flexDirection:"column", width:68 }}>
-        {currentStrips.map((strip, i) => {
-          const isActive = active===strip.key;
-          const hasVal   = strip.val && strip.val!=="$0";
-          const vc       = hasVal ? valColor(strip.type) : "#fff";
-          return (
-            <div key={strip.key} onClick={() => setActive(strip.key)} style={{
-              flex:1, background:strip.color,
-              display:"flex", flexDirection:"column",
-              alignItems:"center", justifyContent:"center",
-              gap:3, padding:"0 4px",
-              cursor:"pointer",
-              opacity:isActive?1:hasVal?0.88:0.48,
-              boxShadow:isActive?"inset -5px 0 0 rgba(0,0,0,0.25)":"none",
-              borderTop:i>0?"1px solid rgba(255,255,255,0.12)":"none",
-              transition:"opacity 0.15s, box-shadow 0.15s",
-            }}>
-              <div style={{ fontSize:7, fontWeight:700, letterSpacing:"0.08em", color:"rgba(255,255,255,0.7)", textTransform:"uppercase", textAlign:"center", lineHeight:1 }}>
-                {strip.label}
-              </div>
-              <div style={{ fontSize:hasVal&&strip.val.length>4?11:14, fontWeight:900, fontFamily:"Georgia,serif", color:vc, lineHeight:1, textAlign:"center" }}>
-                {hasVal ? strip.val : "—"}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Keypad */}
-      {showKeypad && <Keypad value={valMap[activeFieldKey]||""} onChange={setMap[activeFieldKey]||(() => {})} onDone={() => setKeypadOpen(false)} />}
-    </div>
-  );
+  // Field display
+  updateFields();
+  updateSlider();
 }
+
+function getFieldRaw(field) {
+  if (field === 'arv')       return state.arv;
+  if (field === 'repairs')   return state.repairs;
+  if (field === 'buyPrice')  return state.buyPrice;
+  if (field === 'materials') return state.materials;
+  if (field === 'budgetBuy') return state.budgetBuy;
+  if (field === 'salePrice') return state.salePrice;
+  return '';
+}
+
+function displayVal(raw) {
+  const n = parseFloat(raw)||0;
+  return n ? '$' + n.toLocaleString() : null;
+}
+
+function updateFields() {
+  document.querySelectorAll('.field').forEach(function(el) {
+    const f = el.dataset.field;
+    if (!f) return;
+    const raw = getFieldRaw(f);
+    const dv = el.querySelector('.field-value');
+    const shown = displayVal(raw);
+    dv.innerHTML = shown ? shown : '<span class="field-placeholder">tap to enter</span>';
+    el.classList.toggle('active', state.active === f || (state.mode==='budget' && f==='budgetBuy' && state.active==='buyPrice'));
+  });
+}
+
+function updateSlider() {
+  const s = document.getElementById('profit-slider');
+  const v = document.getElementById('slider-val');
+  if (s) {
+    v.textContent = state.profitPct + '%';
+    const pct = ((state.profitPct - 5) / 35 * 100);
+    s.style.background = 'linear-gradient(to right, rgba(255,255,255,0.7) ' + pct + '%, rgba(255,255,255,0.2) ' + pct + '%)';
+  }
+}
+
+// ── Mode switch ──────────────────────────────────────────────────
+function switchMode(mode) {
+  state.mode = mode;
+  state.result = null;
+  state.active = mode === 'flip' ? 'arv' : 'buyPrice';
+  state.reno = null;
+
+  document.querySelectorAll('.tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.mode === mode);
+  });
+
+  document.getElementById('flip-fields').style.display   = mode==='flip'  ?'block':'none';
+  document.getElementById('sell-fields').style.display   = mode==='sell'  ?'flex':'none';
+  document.getElementById('budget-fields').style.display = mode==='budget'?'flex':'none';
+
+  closeKeypad();
+  render();
+}
+
+// ── Keypad ───────────────────────────────────────────────────────
+const FIELD_KEYS = ['arv','repairs','buyPrice','materials','budgetBuy','salePrice'];
+
+function openKeypad(field) {
+  state.active = field === 'budgetBuy' ? 'buyPrice' : field;
+  document.getElementById('keypad').classList.add('open');
+  document.getElementById('app').style.paddingBottom = '180px';
+  render();
+}
+
+function closeKeypad() {
+  document.getElementById('keypad').classList.remove('open');
+  document.getElementById('app').style.paddingBottom = '0';
+}
+
+function keypadPress(key) {
+  const field = state.mode==='flip'
+    ? (state.active==='arv'?'arv':'repairs')
+    : state.mode==='sell'
+    ? (state.active==='buyPrice'?'buyPrice':'materials')
+    : (state.active==='buyPrice'?'budgetBuy':'salePrice');
+
+  let cur = getFieldRaw(field);
+
+  if (key === 'X') { setState(field, cur.slice(0,-1)); return; }
+  if (key === 'C') { setState(field, ''); return; }
+  if (key === 'K') { const n=parseFloat(cur)||0; if(n>0) setState(field, String(n*1000)); return; }
+  if (cur.length >= 9) return;
+  setState(field, cur + key);
+}
+
+function setState(field, val) {
+  if (field === 'arv')       state.arv = val;
+  if (field === 'repairs')   state.repairs = val;
+  if (field === 'buyPrice')  state.buyPrice = val;
+  if (field === 'materials') state.materials = val;
+  if (field === 'budgetBuy') state.budgetBuy = val;
+  if (field === 'salePrice') state.salePrice = val;
+  render();
+}
+
+// ── Calculate ────────────────────────────────────────────────────
+function calculate() {
+  if (state.mode === 'flip') {
+    const a = parseFloat(state.arv)||0, r = parseFloat(state.repairs)||0;
+    if (!a) { shake(); return; }
+    const maxOffer=a*0.70-r, closing=a*0.06, holding=a*0.03;
+    const spread=a-maxOffer-r, profit=spread-closing-holding;
+    const totalIn=maxOffer+r, roi=totalIn>0?(profit/totalIn)*100:0;
+    const repairPct=a>0?(r/a)*100:0, profitPctV=a>0?(profit/a)*100:0;
+    state.result = {maxOffer,closing,holding,spread,profit,roi,repairPct,profitPctV};
+    state.active = 'maxOffer';
+  }
+  if (state.mode === 'sell') {
+    const bp=parseFloat(state.buyPrice)||0, m=parseFloat(state.materials)||0;
+    if (!bp) { shake(); return; }
+    const allIn=bp+m, c=0.06;
+    state.result = {breakEven:allIn/(1-c),sell20:allIn/(1-c-0.20),sell30:allIn/(1-c-0.30),sell40:allIn/(1-c-0.40)};
+    state.active = 'sell30';
+  }
+  if (state.mode === 'budget') {
+    const bp=parseFloat(state.budgetBuy)||0, sp=parseFloat(state.salePrice)||0;
+    if (!bp||!sp) { shake(); return; }
+    const spread=sp-bp, closing=sp*0.06, holding=sp*0.03;
+    const profit=sp*(state.profitPct/100), maxMat=spread-closing-holding-profit;
+    state.result = {spread,closing,holding,profit,maxMat};
+    state.active = 'maxMat';
+  }
+  closeKeypad();
+  render();
+}
+
+function reset() {
+  state.arv=''; state.repairs=''; state.buyPrice=''; state.materials='';
+  state.budgetBuy=''; state.salePrice=''; state.result=null; state.reno=null;
+  state.active = state.mode==='flip'?'arv':'buyPrice';
+  closeKeypad();
+  render();
+}
+
+function shake() {
+  const btn = document.getElementById('btn-calc');
+  btn.classList.add('shake');
+  setTimeout(function(){ btn.classList.remove('shake'); }, 400);
+}
+
+// ── Event listeners ──────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(function(t) {
+  t.addEventListener('click', function() { switchMode(t.dataset.mode); });
+});
+
+document.getElementById('btn-calc').addEventListener('click', calculate);
+document.getElementById('btn-reset').addEventListener('click', reset);
+
+document.getElementById('btn-done').addEventListener('click', closeKeypad);
+document.getElementById('btn-k').addEventListener('click', function() { keypadPress('K'); });
+
+document.querySelectorAll('.kp-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() { keypadPress(btn.dataset.key); });
+});
+
+// Field taps
+document.addEventListener('click', function(e) {
+  const field = e.target.closest('.field');
+  if (field && field.dataset.field) {
+    openKeypad(field.dataset.field);
+  }
+});
+
+// Reno buttons
+document.querySelectorAll('.reno-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const pct = parseFloat(btn.dataset.pct);
+    const a = parseFloat(state.arv)||0;
+    document.querySelectorAll('.reno-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    state.reno = pct;
+    if (a > 0) {
+      state.repairs = String(Math.round(a * pct));
+      state.active = 'repairs';
+    } else {
+      state.active = 'arv';
+    }
+    const info = document.getElementById('reno-info');
+    const names = {0.12:'Cosmetic — paint, floors, fixtures', 0.175:'Moderate — kitchen, bath, appliances', 0.25:'Major — roof, HVAC, structural'};
+    info.textContent = names[pct] || '';
+    info.style.display = 'block';
+    render();
+  });
+});
+
+// Slider
+document.getElementById('profit-slider').addEventListener('input', function() {
+  state.profitPct = parseInt(this.value);
+  updateSlider();
+});
+
+// Init
+switchMode('flip');
+</script>
+</body>
+</html>
