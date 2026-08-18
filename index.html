@@ -83,15 +83,15 @@
 
     /* Strips */
     #strips { position: fixed; right: 0; top: 0; height: 100vh; display: flex; flex-direction: column; width: 68px; }
-    .strip { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0 4px; cursor: pointer; border-top: 1px solid rgba(255,255,255,0.12); transition: opacity 0.15s, box-shadow 0.15s; opacity: 0.48; }
+    .strip { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0 4px; cursor: pointer; border-top: 1px solid rgba(0,0,0,0.06); transition: opacity 0.15s, box-shadow 0.15s; background: rgba(255,255,255,0.82); opacity: 0.55; border-left: 4px solid transparent; }
     .strip:first-child { border-top: none; }
-    .strip.has-val { opacity: 0.88; }
-    .strip.active  { opacity: 1; box-shadow: inset -5px 0 0 rgba(0,0,0,0.25); }
-    .strip-label { font-size: 7px; font-weight: 700; letter-spacing: 0.08em; color: rgba(255,255,255,0.7); text-transform: uppercase; text-align: center; line-height: 1.2; }
-    .strip-value { font-size: 13px; font-weight: 900; color: #fff; text-align: center; line-height: 1; }
+    .strip.has-val { opacity: 0.92; }
+    .strip.active  { opacity: 1; background: rgba(255,255,255,0.97); box-shadow: inset -4px 0 0 rgba(0,0,0,0.08); }
+    .strip-label { font-size: 7px; font-weight: 700; letter-spacing: 0.08em; color: rgba(0,0,0,0.4); text-transform: uppercase; text-align: center; line-height: 1.2; }
+    .strip-value { font-size: 13px; font-weight: 900; color: #1A0E00; text-align: center; line-height: 1; }
     .strip-value.earn  { color: #C4962A; }
-    .strip-value.spend { color: #FF5C5C; }
-    .strip-value.info  { color: rgba(255,255,255,0.95); }
+    .strip-value.spend { color: #CC2200; }
+    .strip-value.info  { color: #1A0E00; }
 
     /* Keypad */
     #keypad { display: none; position: fixed; bottom: 14px; left: 14px; width: calc(100% - 96px); background: rgba(0,0,0,0.6); border-radius: 18px; border: 1px solid rgba(255,255,255,0.15); padding: 6px 8px 8px; z-index: 100; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
@@ -345,7 +345,8 @@ function render() {
     const hasVal = val && val !== '$0';
     const div = document.createElement('div');
     div.className = 'strip' + (hasVal?' has-val':'') + (state.active===s.key?' active':'');
-    div.style.background = s.color;
+    div.style.background = 'rgba(255,255,255,0.88)';
+    div.style.borderLeftColor = s.color;
     div.dataset.key = s.key;
 
     const lbl = document.createElement('div');
@@ -366,9 +367,9 @@ function render() {
   // Reset button
   document.getElementById('btn-reset').style.display = r ? 'block' : 'none';
 
-  // Results
+  // Results — only show after Calculate (not during live preview)
   const resultsEl = document.getElementById('results');
-  if (r) {
+  if (r && !r.live) {
     resultsEl.style.display = 'flex';
     resultsEl.innerHTML = '';
     let items = [];
@@ -521,36 +522,44 @@ function setState(field, val) {
   if (field === 'materials') state.materials = val;
   if (field === 'budgetBuy') state.budgetBuy = val;
   if (field === 'salePrice') state.salePrice = val;
+  liveCalc();
   render();
 }
 
-// ── Calculate ────────────────────────────────────────────────────
-function calculate() {
+// Live calculation — updates strips in real time as you type
+function liveCalc() {
   if (state.mode === 'flip') {
     const a = parseFloat(state.arv)||0, r = parseFloat(state.repairs)||0;
-    if (!a) { shake(); return; }
+    if (!a) { state.result = null; return; }
     const maxOffer=a*0.70-r, closing=a*0.06, holding=a*0.03;
     const spread=a-maxOffer-r, profit=spread-closing-holding;
     const totalIn=maxOffer+r, roi=totalIn>0?(profit/totalIn)*100:0;
     const repairPct=a>0?(r/a)*100:0, profitPctV=a>0?(profit/a)*100:0;
-    state.result = {maxOffer,closing,holding,spread,profit,roi,repairPct,profitPctV};
-    state.active = 'maxOffer';
+    state.result = {maxOffer,closing,holding,spread,profit,roi,repairPct,profitPctV,live:true};
   }
   if (state.mode === 'sell') {
     const bp=parseFloat(state.buyPrice)||0, m=parseFloat(state.materials)||0;
-    if (!bp) { shake(); return; }
+    if (!bp) { state.result = null; return; }
     const allIn=bp+m, c=0.06;
-    state.result = {breakEven:allIn/(1-c),sell20:allIn/(1-c-0.20),sell30:allIn/(1-c-0.30),sell40:allIn/(1-c-0.40)};
-    state.active = 'sell30';
+    state.result = {breakEven:allIn/(1-c),sell20:allIn/(1-c-0.20),sell30:allIn/(1-c-0.30),sell40:allIn/(1-c-0.40),live:true};
   }
   if (state.mode === 'budget') {
     const bp=parseFloat(state.budgetBuy)||0, sp=parseFloat(state.salePrice)||0;
-    if (!bp||!sp) { shake(); return; }
+    if (!bp||!sp) { state.result = null; return; }
     const spread=sp-bp, closing=sp*0.06, holding=sp*0.03;
     const profit=sp*(state.profitPct/100), maxMat=spread-closing-holding-profit;
-    state.result = {spread,closing,holding,profit,maxMat};
-    state.active = 'maxMat';
+    state.result = {spread,closing,holding,profit,maxMat,live:true};
   }
+}
+
+// ── Calculate ────────────────────────────────────────────────────
+function calculate() {
+  liveCalc();
+  if (!state.result) { shake(); return; }
+  state.result.live = false;
+  if (state.mode === 'flip')   state.active = 'maxOffer';
+  if (state.mode === 'sell')   state.active = 'sell30';
+  if (state.mode === 'budget') state.active = 'maxMat';
   closeKeypad();
   render();
 }
@@ -617,7 +626,9 @@ document.querySelectorAll('.reno-btn').forEach(function(btn) {
 // Slider
 document.getElementById('profit-slider').addEventListener('input', function() {
   state.profitPct = parseInt(this.value);
+  liveCalc();
   updateSlider();
+  render();
 });
 
 // Init
