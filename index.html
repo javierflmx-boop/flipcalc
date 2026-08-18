@@ -229,6 +229,7 @@ const state = {
   profitPct: 15,
   result: null,
   reno: null,
+  hasCalculated: false,
 };
 
 const GOLD = '#C4962A', RED = '#FF5C5C';
@@ -469,8 +470,10 @@ function switchMode(mode) {
 
   state.mode   = mode;
   state.result = null;
+  state.hasCalculated = false;
   state.active = mode === 'flip' ? 'arv' : 'buyPrice';
   state.reno   = null;
+  document.getElementById('btn-calc').textContent = 'CALCULATE';
 
   document.querySelectorAll('.tab').forEach(function(t) {
     t.classList.toggle('active', t.dataset.mode === mode);
@@ -528,6 +531,7 @@ function setState(field, val) {
 
 // Live calculation — updates strips in real time as you type
 function liveCalc() {
+  const wasLive = state.hasCalculated; // if already calculated, keep results showing
   if (state.mode === 'flip') {
     const a = parseFloat(state.arv)||0, r = parseFloat(state.repairs)||0;
     if (!a) { state.result = null; return; }
@@ -535,20 +539,20 @@ function liveCalc() {
     const spread=a-maxOffer-r, profit=spread-closing-holding;
     const totalIn=maxOffer+r, roi=totalIn>0?(profit/totalIn)*100:0;
     const repairPct=a>0?(r/a)*100:0, profitPctV=a>0?(profit/a)*100:0;
-    state.result = {maxOffer,closing,holding,spread,profit,roi,repairPct,profitPctV,live:true};
+    state.result = {maxOffer,closing,holding,spread,profit,roi,repairPct,profitPctV,live:!wasLive};
   }
   if (state.mode === 'sell') {
     const bp=parseFloat(state.buyPrice)||0, m=parseFloat(state.materials)||0;
     if (!bp) { state.result = null; return; }
     const allIn=bp+m, c=0.06;
-    state.result = {breakEven:allIn/(1-c),sell20:allIn/(1-c-0.20),sell30:allIn/(1-c-0.30),sell40:allIn/(1-c-0.40),live:true};
+    state.result = {breakEven:allIn/(1-c),sell20:allIn/(1-c-0.20),sell30:allIn/(1-c-0.30),sell40:allIn/(1-c-0.40),live:!wasLive};
   }
   if (state.mode === 'budget') {
     const bp=parseFloat(state.budgetBuy)||0, sp=parseFloat(state.salePrice)||0;
     if (!bp||!sp) { state.result = null; return; }
     const spread=sp-bp, closing=sp*0.06, holding=sp*0.03;
     const profit=sp*(state.profitPct/100), maxMat=spread-closing-holding-profit;
-    state.result = {spread,closing,holding,profit,maxMat,live:true};
+    state.result = {spread,closing,holding,profit,maxMat,live:!wasLive};
   }
 }
 
@@ -557,9 +561,11 @@ function calculate() {
   liveCalc();
   if (!state.result) { shake(); return; }
   state.result.live = false;
+  state.hasCalculated = true;
   if (state.mode === 'flip')   state.active = 'maxOffer';
   if (state.mode === 'sell')   state.active = 'sell30';
   if (state.mode === 'budget') state.active = 'maxMat';
+  document.getElementById('btn-calc').textContent = 'RECALCULATE';
   closeKeypad();
   render();
 }
@@ -567,7 +573,11 @@ function calculate() {
 function reset() {
   state.arv=''; state.repairs=''; state.buyPrice=''; state.materials='';
   state.budgetBuy=''; state.salePrice=''; state.result=null; state.reno=null;
+  state.hasCalculated = false;
   state.active = state.mode==='flip'?'arv':'buyPrice';
+  document.getElementById('btn-calc').textContent = 'CALCULATE';
+  document.querySelectorAll('.reno-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('reno-info').style.display = 'none';
   closeKeypad();
   render();
 }
