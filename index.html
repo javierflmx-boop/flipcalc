@@ -446,10 +446,30 @@ function updateSlider() {
 
 // ── Mode switch ──────────────────────────────────────────────────
 function switchMode(mode) {
-  state.mode = mode;
+  const prev = state.mode;
+  const r    = state.result;
+
+  // ── Smart carry-over ─────────────────────────────────────────
+  if (mode === 'sell') {
+    if (prev === 'flip' && r)   state.buyPrice  = String(Math.round(r.maxOffer));
+    else if (prev === 'budget') state.buyPrice  = state.budgetBuy;
+    if (prev === 'flip')        state.materials = state.repairs;
+  }
+  if (mode === 'budget') {
+    if (prev === 'flip' && r)   state.budgetBuy = String(Math.round(r.maxOffer));
+    else if (prev === 'sell')   state.budgetBuy = state.buyPrice;
+    if (prev === 'flip')        state.salePrice = state.arv;
+  }
+  if (mode === 'flip') {
+    if (prev === 'budget' && state.salePrice) state.arv     = state.salePrice;
+    if (prev === 'sell'   && state.materials) state.repairs = state.materials;
+  }
+  // ─────────────────────────────────────────────────────────────
+
+  state.mode   = mode;
   state.result = null;
   state.active = mode === 'flip' ? 'arv' : 'buyPrice';
-  state.reno = null;
+  state.reno   = null;
 
   document.querySelectorAll('.tab').forEach(function(t) {
     t.classList.toggle('active', t.dataset.mode === mode);
