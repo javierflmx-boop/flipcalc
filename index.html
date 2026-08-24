@@ -563,7 +563,7 @@ function closeKeypad() {
 
 function keypadPress(key) {
   const field = state.mode==='flip'
-    ? (state.active==='arv'?'arv':'repairs')
+    ? (state.active==='arv' ? 'arv' : state.active==='askingPrice' ? 'askingPrice' : 'repairs')
     : state.mode==='sell'
     ? (state.active==='buyPrice'?'buyPrice':'materials')
     : (state.active==='buyPrice'?'budgetBuy':'salePrice');
