@@ -105,7 +105,44 @@
     .kp-btn.back   { background: rgba(255,255,255,0.06); color: #aaa; font-size: 15px; }
     .kp-btn:active { background: rgba(255,255,255,0.28); }
 
-    /* Info panel */
+    /* Save button */
+    #btn-save { width:100%; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); border-radius:12px; color:#fff; font-size:12px; font-weight:600; padding:12px 0; letter-spacing:0.06em; }
+    #btn-save:active { background:rgba(255,255,255,0.22); }
+
+    /* History button in header */
+    #btn-history { background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.25); border-radius:20px; font-size:14px; padding:5px 10px; margin-left:8px; }
+
+    /* History overlay + panel */
+    #history-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; }
+    #history-overlay.open { display:block; }
+    #history-panel { display:none; position:fixed; bottom:0; left:0; right:0; background:linear-gradient(180deg,#2A1A00 0%,#1A0E00 100%); border-radius:24px 24px 0 0; z-index:201; max-height:75vh; overflow-y:auto; padding-bottom:32px; transform:translateY(100%); transition:transform 0.3s cubic-bezier(.22,.68,0,1.2); }
+    #history-panel.open { display:block; transform:translateY(0); }
+    #history-header { display:flex; justify-content:space-between; align-items:center; padding:20px 22px 16px; border-bottom:1px solid rgba(255,255,255,0.08); }
+    #history-title { font-size:16px; font-weight:700; color:#fff; letter-spacing:-0.01em; }
+    #btn-close-history { background:rgba(255,255,255,0.08); border:none; border-radius:50%; color:rgba(255,255,255,0.5); font-size:14px; width:30px; height:30px; }
+    #history-list { padding:12px 0; }
+    .history-item { display:flex; justify-content:space-between; align-items:center; padding:14px 22px; border-bottom:1px solid rgba(255,255,255,0.06); cursor:pointer; }
+    .history-item:active { background:rgba(255,255,255,0.05); }
+    .history-item-left {}
+    .history-item-name { font-size:14px; font-weight:700; color:#fff; margin-bottom:3px; }
+    .history-item-meta { font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:0.06em; }
+    .history-item-right { text-align:right; }
+    .history-item-offer { font-size:18px; font-weight:800; color:#C4962A; }
+    .history-item-profit { font-size:10px; color:rgba(255,255,255,0.5); margin-top:2px; }
+    .history-item-del { background:none; border:none; color:rgba(255,100,100,0.4); font-size:16px; padding:4px 8px; margin-left:8px; }
+    #history-empty { text-align:center; color:rgba(255,255,255,0.3); font-size:13px; line-height:1.8; padding:40px 22px; display:none; }
+
+    /* Name prompt */
+    #name-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:300; }
+    #name-overlay.open { display:block; }
+    #name-prompt { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#2A1A00; border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:24px 22px; z-index:301; width:calc(100% - 48px); max-width:360px; }
+    #name-prompt.open { display:block; }
+    #name-title { font-size:16px; font-weight:700; color:#fff; margin-bottom:16px; }
+    #name-input { width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); border-radius:12px; color:#fff; font-size:16px; font-family:'DM Sans',sans-serif; padding:12px 14px; outline:none; margin-bottom:14px; }
+    #name-input::placeholder { color:rgba(255,255,255,0.3); }
+    #name-btns { display:flex; gap:10px; }
+    #btn-name-cancel { flex:1; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:12px; color:rgba(255,255,255,0.6); font-size:13px; font-weight:600; padding:12px 0; }
+    #btn-name-save { flex:2; background:#C4962A; border:none; border-radius:12px; color:#fff; font-size:13px; font-weight:700; padding:12px 0; }
     #info-panel { margin: 0 22px 24px; padding: 14px 16px; background: rgba(0,0,0,0.25); border-radius: 14px; border: 1px solid rgba(255,255,255,0.15); min-height: 64px; display: none; }
     #info-panel.visible { display: block; }
     #info-title { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: rgba(255,255,255,0.45); text-transform: uppercase; margin-bottom: 5px; }
@@ -121,6 +158,7 @@
       <div id="brand">Flip<span>Calc</span></div>
     </div>
     <button id="btn-reset">RESET</button>
+    <button id="btn-history" title="Saved Deals">🏠</button>
   </div>
 
   <div id="tabs">
@@ -200,6 +238,9 @@
   </div>
 
   <div id="results"></div>
+  <div id="save-wrap" style="display:none; padding: 0 22px 4px;">
+    <button id="btn-save">💾 &nbsp;Save this Deal</button>
+  </div>
   <div id="info-panel">
     <div id="info-title"></div>
     <div id="info-text"></div>
@@ -228,6 +269,28 @@
     <button class="kp-btn action" data-key="C">CLR</button>
     <button class="kp-btn" data-key="0">0</button>
     <button class="kp-btn back" data-key="X">⌫</button>
+  </div>
+</div>
+
+<!-- History overlay -->
+<div id="history-overlay"></div>
+<div id="history-panel">
+  <div id="history-header">
+    <div id="history-title">Saved Deals</div>
+    <button id="btn-close-history">✕</button>
+  </div>
+  <div id="history-list"></div>
+  <div id="history-empty">No saved deals yet.<br>Calculate a deal and tap Save.</div>
+</div>
+
+<!-- Name prompt -->
+<div id="name-overlay"></div>
+<div id="name-prompt">
+  <div id="name-title">Name this Deal</div>
+  <input id="name-input" type="text" placeholder="e.g. Oak St House, Deal #1..." maxlength="40"/>
+  <div id="name-btns">
+    <button id="btn-name-cancel">Cancel</button>
+    <button id="btn-name-save">Save</button>
   </div>
 </div>
 
@@ -405,8 +468,10 @@ function render() {
 
   // Results — only show after Calculate (not during live preview)
   const resultsEl = document.getElementById('results');
+  const saveWrap  = document.getElementById('save-wrap');
   if (r && !r.live) {
     resultsEl.style.display = 'flex';
+    saveWrap.style.display  = 'block';
     resultsEl.innerHTML = '';
     let items = [];
     if (state.mode === 'flip') {
@@ -448,6 +513,7 @@ function render() {
     });
   } else {
     resultsEl.style.display = 'none';
+    saveWrap.style.display  = 'none';
   }
 
   // Info panel
@@ -703,8 +769,117 @@ document.getElementById('profit-slider').addEventListener('input', function() {
   render();
 });
 
-// Init
-switchMode('flip');
+// ── History ──────────────────────────────────────────────────────
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('flipcalc_history') || '[]'); } catch(e) { return []; }
+}
+function saveHistory(list) {
+  try { localStorage.setItem('flipcalc_history', JSON.stringify(list)); } catch(e) {}
+}
+
+function openHistory() {
+  renderHistory();
+  document.getElementById('history-overlay').classList.add('open');
+  setTimeout(function(){ document.getElementById('history-panel').classList.add('open'); }, 10);
+}
+function closeHistory() {
+  document.getElementById('history-panel').classList.remove('open');
+  document.getElementById('history-overlay').classList.remove('open');
+}
+
+function renderHistory() {
+  const list = getHistory();
+  const el   = document.getElementById('history-list');
+  const empty= document.getElementById('history-empty');
+  el.innerHTML = '';
+  if (list.length === 0) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.slice().reverse().forEach(function(deal, idx) {
+    const realIdx = list.length - 1 - idx;
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const profitColor = deal.profit >= 0 ? '#C4962A' : '#FF5C5C';
+    item.innerHTML =
+      '<div class="history-item-left">' +
+        '<div class="history-item-name">' + deal.name + '</div>' +
+        '<div class="history-item-meta">' + deal.mode.toUpperCase() + ' · ' + new Date(deal.ts).toLocaleDateString() + '</div>' +
+      '</div>' +
+      '<div class="history-item-right">' +
+        '<div class="history-item-offer">' + fmt(deal.maxOffer || deal.maxMat || 0) + '</div>' +
+        '<div class="history-item-profit" style="color:' + profitColor + '">' + (deal.profit >= 0 ? '+' : '') + fmt(deal.profit) + ' profit</div>' +
+      '</div>' +
+      '<button class="history-item-del" data-idx="' + realIdx + '">🗑</button>';
+
+    item.querySelector('.history-item-del').addEventListener('click', function(e) {
+      e.stopPropagation();
+      const h = getHistory(); h.splice(realIdx, 1); saveHistory(h); renderHistory();
+    });
+    item.addEventListener('click', function(e) {
+      if (e.target.classList.contains('history-item-del')) return;
+      loadDeal(deal);
+      closeHistory();
+    });
+    el.appendChild(item);
+  });
+}
+
+function loadDeal(deal) {
+  switchMode(deal.mode);
+  state.arv         = String(deal.arv || '');
+  state.repairs     = String(deal.repairs || '');
+  state.askingPrice = String(deal.askingPrice || '');
+  state.buyPrice    = String(deal.buyPrice || '');
+  state.materials   = String(deal.materials || '');
+  state.budgetBuy   = String(deal.budgetBuy || '');
+  state.salePrice   = String(deal.salePrice || '');
+  state.profitPct   = deal.profitPct || 15;
+  liveCalc();
+  if (state.result) { state.result.live = false; state.hasCalculated = true; document.getElementById('btn-calc').textContent = 'RECALCULATE'; }
+  render();
+}
+
+function openNamePrompt() {
+  document.getElementById('name-input').value = '';
+  document.getElementById('name-overlay').classList.add('open');
+  document.getElementById('name-prompt').classList.add('open');
+  setTimeout(function(){ document.getElementById('name-input').focus(); }, 100);
+}
+function closeNamePrompt() {
+  document.getElementById('name-overlay').classList.remove('open');
+  document.getElementById('name-prompt').classList.remove('open');
+}
+function saveDeal(name) {
+  if (!name.trim() || !state.result) return;
+  const r = state.result;
+  const deal = {
+    name: name.trim(), mode: state.mode, ts: Date.now(),
+    arv: state.arv, repairs: state.repairs, askingPrice: state.askingPrice,
+    buyPrice: state.buyPrice, materials: state.materials,
+    budgetBuy: state.budgetBuy, salePrice: state.salePrice, profitPct: state.profitPct,
+    maxOffer: r.maxOffer || null, maxMat: r.maxMat || null,
+    profit: r.profit || 0,
+  };
+  const h = getHistory(); h.push(deal); saveHistory(h);
+}
+
+// History event listeners
+document.getElementById('btn-history').addEventListener('click', openHistory);
+document.getElementById('btn-close-history').addEventListener('click', closeHistory);
+document.getElementById('history-overlay').addEventListener('click', closeHistory);
+document.getElementById('btn-save').addEventListener('click', openNamePrompt);
+document.getElementById('btn-name-cancel').addEventListener('click', closeNamePrompt);
+document.getElementById('name-overlay').addEventListener('click', closeNamePrompt);
+document.getElementById('btn-name-save').addEventListener('click', function() {
+  saveDeal(document.getElementById('name-input').value);
+  closeNamePrompt();
+  // Brief confirmation
+  const btn = document.getElementById('btn-save');
+  btn.textContent = '✓  Deal Saved!';
+  setTimeout(function(){ btn.textContent = '💾  Save this Deal'; }, 2000);
+});
+document.getElementById('name-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { saveDeal(this.value); closeNamePrompt(); }
+});
 </script>
 </body>
 </html>
