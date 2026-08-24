@@ -105,8 +105,11 @@
     .kp-btn.back   { background: rgba(255,255,255,0.06); color: #aaa; font-size: 15px; }
     .kp-btn:active { background: rgba(255,255,255,0.28); }
 
-    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
-    .shake { animation: shake 0.4s ease; }
+    /* Info panel */
+    #info-panel { margin: 0 22px 24px; padding: 14px 16px; background: rgba(0,0,0,0.25); border-radius: 14px; border: 1px solid rgba(255,255,255,0.15); min-height: 64px; display: none; }
+    #info-panel.visible { display: block; }
+    #info-title { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: rgba(255,255,255,0.45); text-transform: uppercase; margin-bottom: 5px; }
+    #info-text  { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.85); line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -137,6 +140,10 @@
     <div id="flip-fields">
       <div class="field active" data-field="arv">
         <div class="field-label">After Repair Value</div>
+        <div class="field-value"><span class="field-placeholder">tap to enter</span></div>
+      </div>
+      <div class="field" data-field="askingPrice">
+        <div class="field-label">Asking Price — What they want</div>
         <div class="field-value"><span class="field-placeholder">tap to enter</span></div>
       </div>
       <div id="reno-wrap">
@@ -193,6 +200,10 @@
   </div>
 
   <div id="results"></div>
+  <div id="info-panel">
+    <div id="info-title"></div>
+    <div id="info-text"></div>
+  </div>
 </div>
 
 <!-- Strips -->
@@ -225,7 +236,7 @@
 const state = {
   mode: 'flip',
   active: 'arv',
-  arv: '', repairs: '', buyPrice: '', materials: '', budgetBuy: '', salePrice: '',
+  arv: '', repairs: '', askingPrice: '', buyPrice: '', materials: '', budgetBuy: '', salePrice: '',
   profitPct: 15,
   result: null,
   reno: null,
@@ -233,6 +244,28 @@ const state = {
 };
 
 const GOLD = '#C4962A', RED = '#FF5C5C';
+
+const INFO = {
+  arv:        { title:'After Repair Value (ARV)', text:'What the property will sell for after all renovations are complete. This is your target sale price — estimate it by looking at similar sold homes nearby.' },
+  askingPrice:{ title:'Asking Price', text:'The price the seller is listing the property for. Compare this to your Max Offer — if the asking price is higher, you need to negotiate down.' },
+  repairs:    { title:'Repair Cost', text:'Total cost of all labor and materials to renovate the property. Be realistic — underestimating repairs is the #1 mistake in flipping.' },
+  maxOffer:   { title:'Max Offer — 70% Rule', text:'The maximum you should pay for this property. Formula: ARV × 70% − Repairs. Never go above this number or your margin disappears.' },
+  spread:     { title:'Gross Spread', text:'The raw difference between what you sell for and what you paid plus repairs. This is before selling costs — your spread must be large enough to cover closing and holding.' },
+  closing:    { title:'Closing Costs (6% of ARV)', text:'Agent commissions and closing fees paid when you sell the property. Typically 5–6% of the sale price. Always factor this in before making an offer.' },
+  holding:    { title:'Holding Costs (3% of ARV)', text:'Monthly costs while you own the property: property taxes, insurance, utilities, and loan interest. The longer the renovation takes, the higher this gets.' },
+  profit:     { title:'Real Profit', text:'Your actual take-home after every cost — purchase, repairs, closing, and holding. This is the real number. Make sure it justifies the risk and effort.' },
+  roi:        { title:'Return on Investment (ROI)', text:'Your profit as a percentage of your total money invested. A good flip typically targets 20–30%+ ROI. Below 15% may not justify the risk.' },
+  buyPrice:   { title:'Purchase Price', text:'What you paid for the property. This is your starting cost before any renovation work begins.' },
+  materials:  { title:'Labor & Materials', text:'Total renovation spend — everything from demo to finishing touches. Track this closely against your budget during the project.' },
+  breakEven:  { title:'Break-Even Sale Price', text:'The minimum price you need to sell for just to recover your costs, including closing fees. Selling below this means losing money.' },
+  sell20:     { title:'Sale Price for 20% Profit', text:'What you need to list at to walk away with a 20% profit on your total investment after all costs. A solid baseline target.' },
+  sell30:     { title:'Sale Price for 30% Profit', text:'Your sweet spot target. Aim here — it covers unexpected costs and gives you a strong return on the deal.' },
+  sell40:     { title:'Sale Price for 40% Profit', text:'Aggressive target. Achievable in strong markets or with low repair costs. If the market supports it, push for this price.' },
+  salePrice:  { title:'Target Sale Price', text:'What you expect to sell the property for. The higher this is vs your purchase price, the more budget you have for materials.' },
+  maxMat:     { title:'Max Material Budget', text:'The maximum you can spend on labor and materials while still hitting your profit target. Stay under this number — every dollar over comes out of your profit.' },
+  profit_b:   { title:'Your Profit', text:'What you take home after buying, renovating, closing, and holding costs. Your profit target determines how tight your material budget is.' },
+  spread_b:   { title:'Gross Spread', text:'The difference between your sale price and purchase price before any costs. This is the total pool of money you have to work with.' },
+};
 
 function fmt(n) {
   if (!n && n !== 0) return '$0';
@@ -248,14 +281,15 @@ function fmtFull(n) {
 
 // ── Strip config ─────────────────────────────────────────────────
 const FLIP_STRIPS = [
-  {key:'arv',      label:'ARV',       color:'#5CC8C8', type:'info'},
-  {key:'repairs',  label:'REPAIRS',   color:'#C47EDB', type:'spend'},
-  {key:'maxOffer', label:'MAX OFFER', color:'#F5A623', type:'info'},
-  {key:'spread',   label:'SPREAD',    color:'#F4845F', type:'info'},
-  {key:'closing',  label:'CLOSING',   color:'#E05B7A', type:'spend'},
-  {key:'holding',  label:'HOLDING',   color:'#6BAED6', type:'spend'},
-  {key:'profit',   label:'PROFIT',    color:'#5DB87A', type:'earn'},
-  {key:'roi',      label:'ROI',       color:'#A8CC5A', type:'earn'},
+  {key:'arv',        label:'ARV',       color:'#5CC8C8', type:'info'},
+  {key:'askingPrice',label:'ASKING',    color:'#9B8FFF', type:'info'},
+  {key:'repairs',    label:'REPAIRS',   color:'#C47EDB', type:'spend'},
+  {key:'maxOffer',   label:'MAX OFFER', color:'#F5A623', type:'info'},
+  {key:'spread',     label:'SPREAD',    color:'#F4845F', type:'info'},
+  {key:'closing',    label:'CLOSING',   color:'#E05B7A', type:'spend'},
+  {key:'holding',    label:'HOLDING',   color:'#6BAED6', type:'spend'},
+  {key:'profit',     label:'PROFIT',    color:'#5DB87A', type:'earn'},
+  {key:'roi',        label:'ROI',       color:'#A8CC5A', type:'earn'},
 ];
 const SELL_STRIPS = [
   {key:'buyPrice',  label:'PAID',      color:'#F4845F', type:'spend'},
@@ -281,8 +315,9 @@ function getStrips() {
 
 function getStripVal(key) {
   const r = state.result;
-  if (key === 'arv')      return fmt(parseFloat(state.arv)||0);
-  if (key === 'repairs')  return fmt(parseFloat(state.repairs)||0);
+  if (key === 'arv')         return fmt(parseFloat(state.arv)||0);
+  if (key === 'askingPrice') return fmt(parseFloat(state.askingPrice)||0);
+  if (key === 'repairs')     return fmt(parseFloat(state.repairs)||0);
   if (key === 'buyPrice') return fmt(parseFloat(state.mode==='budget'?state.budgetBuy:state.buyPrice)||0);
   if (key === 'materials')return fmt(parseFloat(state.materials)||0);
   if (key === 'salePrice')return fmt(parseFloat(state.salePrice)||0);
@@ -375,6 +410,17 @@ function render() {
     resultsEl.innerHTML = '';
     let items = [];
     if (state.mode === 'flip') {
+      // Deal verdict if asking price entered
+      if (r.ask && r.askDiff !== null) {
+        const works = r.askDiff >= 0;
+        const verdict = document.createElement('div');
+        verdict.style.cssText = 'width:100%;padding:12px 16px;border-radius:12px;margin-bottom:4px;background:' + (works?'rgba(100,200,100,0.15)':'rgba(255,60,60,0.15)') + ';border:1px solid ' + (works?'rgba(100,200,100,0.3)':'rgba(255,60,60,0.3)');
+        verdict.innerHTML = '<div style="font-size:9px;letter-spacing:0.15em;color:rgba(255,255,255,0.5);margin-bottom:4px">DEAL CHECK</div>'
+          + '<div style="font-size:16px;font-weight:800;color:' + (works?'#7EE8A2':RED) + '">'
+          + (works ? '✓ WORKS — offer ' + fmt(Math.abs(r.askDiff)) + ' above ask' : '✗ TOUGH — offer ' + fmt(Math.abs(r.askDiff)) + ' below ask')
+          + '</div>';
+        resultsEl.appendChild(verdict);
+      }
       items = [
         {label:'MAX OFFER',   val:fmt(r.maxOffer), color:'#fff'},
         {label:'REAL PROFIT', val:fmt(r.profit),   color:r.profit>=0?GOLD:RED},
@@ -404,18 +450,31 @@ function render() {
     resultsEl.style.display = 'none';
   }
 
-  // Field display
+  // Info panel
+  const infoKey = state.active === 'profit' && state.mode === 'budget' ? 'profit_b'
+                : state.active === 'spread'  && state.mode === 'budget' ? 'spread_b'
+                : state.active;
+  const info = INFO[infoKey];
+  const infoPanel = document.getElementById('info-panel');
+  if (info) {
+    document.getElementById('info-title').textContent = info.title;
+    document.getElementById('info-text').textContent  = info.text;
+    infoPanel.classList.add('visible');
+  } else {
+    infoPanel.classList.remove('visible');
+  }
   updateFields();
   updateSlider();
 }
 
 function getFieldRaw(field) {
-  if (field === 'arv')       return state.arv;
-  if (field === 'repairs')   return state.repairs;
-  if (field === 'buyPrice')  return state.buyPrice;
-  if (field === 'materials') return state.materials;
-  if (field === 'budgetBuy') return state.budgetBuy;
-  if (field === 'salePrice') return state.salePrice;
+  if (field === 'arv')         return state.arv;
+  if (field === 'repairs')     return state.repairs;
+  if (field === 'askingPrice') return state.askingPrice;
+  if (field === 'buyPrice')    return state.buyPrice;
+  if (field === 'materials')   return state.materials;
+  if (field === 'budgetBuy')   return state.budgetBuy;
+  if (field === 'salePrice')   return state.salePrice;
   return '';
 }
 
@@ -519,9 +578,10 @@ function keypadPress(key) {
 }
 
 function setState(field, val) {
-  if (field === 'arv')       state.arv = val;
-  if (field === 'repairs')   state.repairs = val;
-  if (field === 'buyPrice')  state.buyPrice = val;
+  if (field === 'arv')         state.arv = val;
+  if (field === 'repairs')     state.repairs = val;
+  if (field === 'askingPrice') state.askingPrice = val;
+  if (field === 'buyPrice')    state.buyPrice = val;
   if (field === 'materials') state.materials = val;
   if (field === 'budgetBuy') state.budgetBuy = val;
   if (field === 'salePrice') state.salePrice = val;
@@ -539,7 +599,9 @@ function liveCalc() {
     const spread=a-maxOffer-r, profit=spread-closing-holding;
     const totalIn=maxOffer+r, roi=totalIn>0?(profit/totalIn)*100:0;
     const repairPct=a>0?(r/a)*100:0, profitPctV=a>0?(profit/a)*100:0;
-    state.result = {maxOffer,closing,holding,spread,profit,roi,repairPct,profitPctV,live:!wasLive};
+    const ask = parseFloat(state.askingPrice)||0;
+    const askDiff = ask > 0 ? maxOffer - ask : null; // positive = offer above ask (rare), negative = offer below ask
+    state.result = {maxOffer,closing,holding,spread,profit,roi,repairPct,profitPctV,ask,askDiff,live:!wasLive};
   }
   if (state.mode === 'sell') {
     const bp=parseFloat(state.buyPrice)||0, m=parseFloat(state.materials)||0;
@@ -571,7 +633,7 @@ function calculate() {
 }
 
 function reset() {
-  state.arv=''; state.repairs=''; state.buyPrice=''; state.materials='';
+  state.arv=''; state.repairs=''; state.askingPrice=''; state.buyPrice=''; state.materials='';
   state.budgetBuy=''; state.salePrice=''; state.result=null; state.reno=null;
   state.hasCalculated = false;
   state.active = state.mode==='flip'?'arv':'buyPrice';
